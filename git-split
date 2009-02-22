@@ -107,45 +107,67 @@ def main(args):
     except IOError:
         pass
 
-    temp = run(["git", "log", "--pretty=raw", newest_hash]).split("\n\n")
+    temp = run(["git", "log", "--pretty=raw", newest_hash]).split("\n")
     commits = {}
-    for headers,message in izip(temp[0::2], temp[1::2]):
-        commit = {}
-        commit_hash = None
-        headers = [header.split(None, 1) for header in headers.split("\n")]
-        for key,value in headers:
-            if key == "parent":
-                commit.setdefault("parents", []).append(value)
-            elif key == "commit":
-                commit_hash = value
+    commit = {}
+    message = ""
+    in_header = None
+    for logline in temp:
+        pprint.pprint(logline)
+        if logline:
+            key, value = logline.split(None, 1)
+            if key == "commit":
+	            in_header = 1
+	            if commit:
+                        commit["message"] = message
+	                pprint.pprint(commit)
+	                commit = {}
+                    message = ""
+            if in_header:
+	            commit[key] = value
             else:
-                if key in commit:
-                    raise Exception('Duplicate key "%s"' % key)
-                commit[key] = value
-        commit["message"] = "".join([line[4:]+"\n"
-                                      for line in message.split("\n")])
-        if commit_hash is None:
-            raise Exception("Commit without hash")
-        if commit_hash in grafts:
-            commit["parents"] = grafts[commit_hash]
-        if commit_hash == oldest_hash or "parents" not in commit:
-            commit["parents"] = []
-        # check if we're still in the parents
-        if os.environ["DEBUG"]:
-            pprint.pprint(commit["parents"])
-        new_parents = []
-        for parent in commit["parents"]:
-            x = get_subtree(parent, project)
-            if not x:
-                print "Parent %s missing" % (parent, )
-            else:
-                new_parents.append(parent)
-        if os.environ["DEBUG"]:
-            pprint.pprint(new_parents)
-        commit["parents"] = new_parents
-        commits[commit_hash] = commit
+                message = message + logline[4:] + "\n"
+        else:
+            if in_header:
+                in_header = None
 
-    print walk(commits, dict(), newest_hash, project)
+#    for headers,message in izip(temp[0::2], temp[1::2]):
+#        commit = {}
+#        commit_hash = None
+#        headers = [header.split(None, 1) for header in headers.split("\n")]
+#        for key,value in headers:
+#            if key == "parent":
+#                commit.setdefault("parents", []).append(value)
+#            elif key == "commit":
+#                commit_hash = value
+#            else:
+#                if key in commit:
+#                    raise Exception('Duplicate key "%s"' % key)
+#                commit[key] = value
+#        commit["message"] = "".join([line[4:]+"\n"
+#                                      for line in message.split("\n")])
+#        if commit_hash is None:
+#            raise Exception("Commit without hash")
+#        if commit_hash in grafts:
+#            commit["parents"] = grafts[commit_hash]
+#        if commit_hash == oldest_hash or "parents" not in commit:
+#            commit["parents"] = []
+#        # check if we're still in the parents
+#        if os.environ["DEBUG"]:
+#            pprint.pprint(commit["parents"])
+#        new_parents = []
+#        for parent in commit["parents"]:
+#            x = get_subtree(parent, project)
+#            if not x:
+#                print "Parent %s missing" % (parent, )
+#            else:
+#                new_parents.append(parent)
+#        if os.environ["DEBUG"]:
+#            pprint.pprint(new_parents)
+#        commit["parents"] = new_parents
+#        commits[commit_hash] = commit
+#
+#    print walk(commits, dict(), newest_hash, project)
 
 try:
     import psyco
