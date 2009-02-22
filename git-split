@@ -27,14 +27,14 @@ def parse_author_date(s):
     return (name, email[1:-1], time + " " + timezone)
 
 def get_subtree(tree, name):
-    output = run(["git-ls-tree", tree, name])
+    output = run(["git", "ls-tree", tree, name])
     if not output:
         return None
     return output.split()[2]
 
 def is_ancestor(new_commits, cur, other):
     """Return True if cur has other as an ancestor, or False otherwise."""
-    return run(["git-merge-base", cur, other]).strip() == other
+    return run(["git", "merge-base", cur, other]).strip() == other
 
 def walk(commits, new_commits, commit_hash, project):
     if os.environ["DEBUG"]:
@@ -62,7 +62,7 @@ def walk(commits, new_commits, commit_hash, project):
             new_hash = None
 
         if not new_hash:
-            args = ["git-commit-tree", tree]
+            args = ["git", "commit-tree", tree]
             for new_parent in new_parents:
                 args.extend(["-p", new_parent])
             env = dict(zip(["GIT_AUTHOR_"+n for n in ["NAME", "EMAIL", "DATE"]],
@@ -90,10 +90,10 @@ def main(args):
         newest = args[1]
     else:
         newest = "HEAD"
-    newest_hash = run(["git-rev-parse", newest]).strip()
+    newest_hash = run(["git", "rev-parse", newest]).strip()
     if len(args) > 2:
         oldest = args[2]
-        oldest_hash = run(["git-rev-parse", oldest]).strip()
+        oldest_hash = run(["git", "rev-parse", oldest]).strip()
     else:
         oldest_hash = None
 
@@ -107,7 +107,7 @@ def main(args):
     except IOError:
         pass
 
-    temp = run(["git-log", "--pretty=raw", newest_hash]).split("\n\n")
+    temp = run(["git", "log", "--pretty=raw", newest_hash]).split("\n\n")
     commits = {}
     for headers,message in izip(temp[0::2], temp[1::2]):
         commit = {}
