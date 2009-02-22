@@ -14,6 +14,7 @@
 from itertools import izip
 from subprocess import Popen, PIPE
 import os, sys
+import pprint
 
 def run(cmd, stdin=None, env={}):
     newenv = os.environ.copy()
@@ -36,12 +37,16 @@ def is_ancestor(new_commits, cur, other):
     return run(["git-merge-base", cur, other]).strip() == other
 
 def walk(commits, new_commits, commit_hash, project):
+    if os.environ["DEBUG"]:
+        print "Walking "+commit_hash
     commit = commits[commit_hash]
     if not(commit.has_key("new_hash")):
         tree = get_subtree(commit["tree"], project)
         commit["new_tree"] = tree
         if not tree:
-            raise Exception("Did not find project in tree for commit " + commit_hash)
+            if os.environ["DEBUG"]:
+                pprint.pprint(commit)
+            raise Exception("Did not find project in tree "+commit["tree"]+" for commit " + commit_hash)
         new_parents = list(set([walk(commits, new_commits, parent, project)
                                 for parent in commit["parents"]]))
 
@@ -64,6 +69,9 @@ def walk(commits, new_commits, commit_hash, project):
                            parse_author_date(commit["author"]))
                        +zip(["GIT_COMMITTER_"+n for n in ["NAME", "EMAIL", "DATE"]],
                             parse_author_date(commit["committer"])))
+            if os.environ['DEBUG']:
+                pprint.pprint(env)
+                pprint.pprint(args)
             new_hash = run(args, commit["message"], env).strip()
 
         commit["new_parents"] = new_parents
@@ -122,6 +130,9 @@ def main(args):
             commit["parents"] = grafts[commit_hash]
         if commit_hash == oldest_hash or "parents" not in commit:
             commit["parents"] = []
+        # check if we're still in the parents
+        if os.environ["DEBUG"]:
+            pprint.pprint(commit["parents"])
         commits[commit_hash] = commit
 
     print walk(commits, dict(), newest_hash, project)
