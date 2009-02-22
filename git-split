@@ -133,6 +133,16 @@ def main(args):
         # check if we're still in the parents
         if os.environ["DEBUG"]:
             pprint.pprint(commit["parents"])
+        new_parents = []
+        for parent in commit["parents"]:
+            x = get_subtree(parent, project)
+            if not x:
+                print "Parent %s missing" % (parent, )
+            else:
+                new_parents.append(parent)
+        if os.environ["DEBUG"]:
+            pprint.pprint(new_parents)
+        commit["parents"] = new_parents
         commits[commit_hash] = commit
 
     print walk(commits, dict(), newest_hash, project)
