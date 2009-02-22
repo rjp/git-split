@@ -15,11 +15,28 @@ from itertools import izip
 from subprocess import Popen, PIPE
 import os, sys
 import pprint
+import copy
 
 def run(cmd, stdin=None, env={}):
     newenv = os.environ.copy()
     newenv.update(env)
     return Popen(cmd, stdin=PIPE, stdout=PIPE, env=newenv).communicate(stdin)[0]
+
+def store_commit_object(commits, commit, message, oldest_hash, project):
+    l_commit = copy.copy(commit)
+    if l_commit.has_key("commit"):
+        l_commit["message"] = message
+        if l_commit["commit"] == oldest_hash or "parents" not in l_commit:
+            l_commit["parents"] = []
+        new_parents = []
+        for parent in l_commit["parents"]:
+            x = get_subtree(parent, project)
+            if not x:
+                print "Parent %s missing" % (parent, )
+            else:
+                new_parents.append(parent)
+        l_commit["parents"] = new_parents
+        commits[l_commit["commit"]] = l_commit
 
 def parse_author_date(s):
     """Given a GIT author or committer string, return (name, email, date)"""
