@@ -54,14 +54,14 @@ def is_ancestor(new_commits, cur, other):
     return run(["git", "merge-base", cur, other]).strip() == other
 
 def walk(commits, new_commits, commit_hash, project):
-    if os.environ["DEBUG"]:
+    if os.environ.has_key("DEBUG_SPLIT"):
         print "Walking "+commit_hash
     commit = commits[commit_hash]
     if not(commit.has_key("new_hash")):
         tree = get_subtree(commit["tree"], project)
         commit["new_tree"] = tree
         if not tree:
-            if os.environ["DEBUG"]:
+            if os.environ.has_key("DEBUG_SPLIT"):
                 pprint.pprint(commit)
             raise Exception("Did not find project in tree "+commit["tree"]+" for commit " + commit_hash)
         new_parents = list(set([walk(commits, new_commits, parent, project)
@@ -86,7 +86,7 @@ def walk(commits, new_commits, commit_hash, project):
                            parse_author_date(commit["author"]))
                        +zip(["GIT_COMMITTER_"+n for n in ["NAME", "EMAIL", "DATE"]],
                             parse_author_date(commit["committer"])))
-            if os.environ['DEBUG']:
+            if os.environ.has_key('DEBUG_SPLIT'):
                 pprint.pprint(env)
                 pprint.pprint(args)
             new_hash = run(args, commit["message"], env).strip()
@@ -130,7 +130,7 @@ def main(args):
     message = ""
     in_header = None
     for logline in temp:
-        if os.environ["DEBUG"]:
+        if os.environ.has_key("DEBUG_SPLIT"):
             pprint.pprint(logline)
         if logline:
             if logline[:4] == "    ":
@@ -151,7 +151,7 @@ def main(args):
                 in_header = None
 
     store_commit_object(commits, commit, message, oldest_hash, project)
-    if os.environ["DEBUG"]:
+    if os.environ.has_key("DEBUG_SPLIT"):
         pprint.pprint(commits)
     else:
         print walk(commits, dict(), newest_hash, project)
