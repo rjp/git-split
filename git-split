@@ -130,48 +130,31 @@ def main(args):
     message = ""
     in_header = None
     for logline in temp:
+        if os.environ["DEBUG"]:
+            pprint.pprint(logline)
         if logline:
-            key, value = logline.split(None, 1)
-            if key == "commit":
-                in_header = 1
-                store_commit_object(commits, commit, message, oldest_hash, project)
-                commit = {}
-                message = ""
-            if in_header:
-                commit[key] = value
-                if key == "parent":
-                    commit.setdefault("parents", []).append(value)
-            else:
+            if logline[:4] == "    ":
                 message = message + logline[4:] + "\n"
+            else:
+	            key, value = logline.split(None, 1)
+	            if key == "commit":
+	                in_header = 1
+	                store_commit_object(commits, commit, message, oldest_hash, project)
+	                commit = {}
+	                message = ""
+	            if in_header:
+	                commit[key] = value
+	                if key == "parent":
+	                    commit.setdefault("parents", []).append(value)
         else:
             if in_header:
                 in_header = None
 
     store_commit_object(commits, commit, message, oldest_hash, project)
-
-#    pprint.pprint(commits)
-#        if commit_hash is None:
-#            raise Exception("Commit without hash")
-#        if commit_hash in grafts:
-#            commit["parents"] = grafts[commit_hash]
-#        if commit_hash == oldest_hash or "parents" not in commit:
-#            commit["parents"] = []
-#        # check if we're still in the parents
-#        if os.environ["DEBUG"]:
-#            pprint.pprint(commit["parents"])
-#        new_parents = []
-#        for parent in commit["parents"]:
-#            x = get_subtree(parent, project)
-#            if not x:
-#                print "Parent %s missing" % (parent, )
-#            else:
-#                new_parents.append(parent)
-#        if os.environ["DEBUG"]:
-#            pprint.pprint(new_parents)
-#        commit["parents"] = new_parents
-#        commits[commit_hash] = commit
-#
-    print walk(commits, dict(), newest_hash, project)
+    if os.environ["DEBUG"]:
+        pprint.pprint(commits)
+    else:
+        print walk(commits, dict(), newest_hash, project)
 
 try:
     import psyco
