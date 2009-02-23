@@ -16,6 +16,9 @@ from subprocess import Popen, PIPE
 import os, sys
 import pprint
 
+# cache subtree lookups
+trees = {}
+
 def run(cmd, stdin=None, env={}):
     newenv = os.environ.copy()
     newenv.update(env)
@@ -33,6 +36,7 @@ def store_commit_object(commits, commit, message, oldest_hash, project):
             if not x:
                 print "Parent %s missing" % (parent, )
             else:
+                trees[parent] = x
                 new_parents.append(parent)
         l_commit["parents"] = new_parents
         commits[l_commit["commit"]] = l_commit
@@ -43,10 +47,13 @@ def parse_author_date(s):
     return (name, email[1:-1], time + " " + timezone)
 
 def get_subtree(tree, name):
-    output = run(["git", "ls-tree", tree, name])
-    if not output:
-        return None
-    return output.split()[2]
+    if trees.has_key(tree):
+        return trees[tree]
+    else:
+        output = run(["git", "ls-tree", tree, name])
+        if not output:
+            return None
+        return output.split()[2]
 
 def is_ancestor(new_commits, cur, other):
     """Return True if cur has other as an ancestor, or False otherwise."""
